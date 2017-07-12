@@ -34,6 +34,7 @@ import MediaPlayer from './src/streaming/MediaPlayer';
 import MetricsReporting from './src/streaming/metrics/MetricsReporting';
 import MediaPlayerFactory from './src/streaming/MediaPlayerFactory';
 import {getVersionString} from './src/core/Version';
+import MssHandler from './src/mss/MssHandler';
 
 // Shove both of these into the global scope
 var context = (typeof window !== 'undefined' && window) || global;
@@ -44,10 +45,11 @@ if (!dashjs) {
 }
 
 dashjs.MediaPlayer = MediaPlayer;
+dashjs.MssHandler = MssHandler;
 // dashjs.Protection = Protection;
 dashjs.MetricsReporting = MetricsReporting;
 dashjs.MediaPlayerFactory = MediaPlayerFactory;
 dashjs.Version = getVersionString();
 
 export default dashjs;
-export { MediaPlayer, MetricsReporting, MediaPlayerFactory};
+export { MediaPlayer, MetricsReporting, MediaPlayerFactory, MssHandler};
