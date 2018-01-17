@@ -12,10 +12,6 @@ const context = {};
 
 const eventBus = EventBus(context).getInstance();
 
-const streamInfo = {
-    id: 'id'
-};
-
 describe('SourceBufferController', function () {
 
     let sourceBufferController;
@@ -179,7 +175,7 @@ describe('SourceBufferController', function () {
                 end: 11
             });
             let range = sourceBufferController.getBufferRange(buffer, 10);
-            expect(range).to.be.null;
+            expect(range).to.be.null; // jshint ignore:line
         });
 
         it('should return range of buffered data - time not in range (little gap)', function () {
@@ -324,6 +320,38 @@ describe('SourceBufferController', function () {
 
     describe('Method append', function () {
 
+        it('should not throw an error when append data to not defined buffer', function (done) {
+
+            function onAppend(e) {
+                eventBus.off(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
+                expect(e.error.code).to.equal(1);
+                done();
+            }
+
+            eventBus.on(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
+
+            sourceBufferController.append(null, {bytes: 'toto'});
+        });
+
+        it('should not throw an error when append not defined chunk to defined buffer', function (done) {
+            let mediaInfo = {
+                codec: 'video/webm; codecs="vp8, vorbis"'
+            };
+
+            let mediaSource = new MediaSourceMock();
+            let buffer = sourceBufferController.createSourceBuffer(mediaSource, mediaInfo);
+
+            function onAppend(e) {
+                eventBus.off(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
+                expect(e.error.code).to.equal(1);
+                done();
+            }
+
+            eventBus.on(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
+
+            sourceBufferController.append(buffer, null);
+        });
+
         it('should append data to buffer', function (done) {
 
             let mediaInfo = {
@@ -334,7 +362,7 @@ describe('SourceBufferController', function () {
             let buffer = sourceBufferController.createSourceBuffer(mediaSource, mediaInfo);
             expect(mediaSource.buffers).to.have.lengthOf(1);
 
-            function onAppend(e) {
+            function onAppend(/*e*/) {
                 eventBus.off(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
                 expect(buffer.chunk).to.equal('toto');
                 done();
@@ -356,9 +384,9 @@ describe('SourceBufferController', function () {
             let buffer = sourceBufferController.createSourceBuffer(mediaSource, mediaInfo);
             expect(buffer).to.be.instanceOf(TextBufferMock);
 
-            function onAppend(e) {
+            function onAppend(/*e*/) {
                 eventBus.off(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
-                expect(buffer.chunk).to.equal('toto')
+                expect(buffer.chunk).to.equal('toto');
                 done();
             }
             eventBus.on(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
@@ -368,6 +396,17 @@ describe('SourceBufferController', function () {
     });
 
     describe('Method remove', function () {
+
+        it('should not throw an error when remove data to not defined buffer', function (done) {
+            function onRemoved(e) {
+                eventBus.off(Events.SOURCEBUFFER_REMOVE_COMPLETED, onRemoved, this);
+                expect(e.error.code).to.equal(2);
+                done();
+            }
+
+            eventBus.on(Events.SOURCEBUFFER_REMOVE_COMPLETED, onRemoved, this);
+            sourceBufferController.remove(null);
+        });
 
         it('should remove data from buffer', function (done) {
 
@@ -379,16 +418,16 @@ describe('SourceBufferController', function () {
             let buffer = sourceBufferController.createSourceBuffer(mediaSource, mediaInfo);
             expect(mediaSource.buffers).to.have.lengthOf(1);
 
-            function onAppend(e) {
+            function onAppend(/*e*/) {
                 eventBus.off(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
 
                 // remove data
-                sourceBufferController.remove(buffer, 0, 1, mediaSource)
+                sourceBufferController.remove(buffer, 0, 1, mediaSource);
             }
 
-            function onRemoved(e) {
+            function onRemoved(/*e*/) {
                 eventBus.off(Events.SOURCEBUFFER_REMOVE_COMPLETED, onAppend, this);
-                expect(buffer.chunk).to.be.null
+                expect(buffer.chunk).to.be.null; // jshint ignore:line
                 done();
             }
             eventBus.on(Events.SOURCEBUFFER_APPEND_COMPLETED, onAppend, this);
@@ -410,9 +449,9 @@ describe('SourceBufferController', function () {
             let buffer = sourceBufferController.createSourceBuffer(mediaSource, mediaInfo);
             expect(mediaSource.buffers).to.have.lengthOf(1);
 
-            expect(buffer.aborted).to.be.false;
+            expect(buffer.aborted).to.be.false; // jshint ignore:line
             sourceBufferController.abort(mediaSource, buffer);
-            expect(buffer.aborted).to.be.true;
+            expect(buffer.aborted).to.be.true; // jshint ignore:line
         });
 
         it('should not abort if media source is not opened', function () {
@@ -426,9 +465,9 @@ describe('SourceBufferController', function () {
             let buffer = sourceBufferController.createSourceBuffer(mediaSource, mediaInfo);
             expect(mediaSource.buffers).to.have.lengthOf(1);
 
-            expect(buffer.aborted).to.be.false;
+            expect(buffer.aborted).to.be.false; // jshint ignore:line
             sourceBufferController.abort(mediaSource, buffer);
-            expect(buffer.aborted).to.be.false;
+            expect(buffer.aborted).to.be.false; // jshint ignore:line
         });
     });
 

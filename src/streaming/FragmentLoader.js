@@ -41,6 +41,7 @@ const FRAGMENT_LOADER_MESSAGE_NULL_REQUEST = 'request is null';
 
 function FragmentLoader(config) {
 
+    config = config || {};
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
 
@@ -113,6 +114,11 @@ function FragmentLoader(config) {
                             statusText
                         )
                     );
+                },
+                abort: function (request, status) {
+                    if (request && status === 0) {
+                        eventBus.trigger(Events.LOADING_ABANDONED, {request: request, mediaType: request.mediaType, sender: instance});
+                    }
                 }
             });
         } else {

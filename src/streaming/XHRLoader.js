@@ -30,7 +30,7 @@
  */
 import {HTTPRequest} from './vo/metrics/HTTPRequest';
 import FactoryMaker from '../core/FactoryMaker';
-import ErrorHandler from './utils/ErrorHandler.js';
+import ErrorHandler from './utils/ErrorHandler';
 
 /**
  * @module XHRLoader
@@ -38,8 +38,8 @@ import ErrorHandler from './utils/ErrorHandler.js';
  * @param {Object} cfg - dependancies from parent
  */
 function XHRLoader(cfg) {
-    //const context = this.context;
-    //const log = Debug(context).getInstance().log;
+
+    cfg = cfg || {};
     const errHandler = cfg.errHandler;
     const metricsModel = cfg.metricsModel;
     const mediaPlayerModel = cfg.mediaPlayerModel;
@@ -184,6 +184,12 @@ function XHRLoader(cfg) {
             }
         };
 
+        const onabort = function () {
+            if (config.abort) {
+                config.abort(request, xhr.status);
+            }
+        };
+
         if (!requestModifier || !metricsModel || !errHandler) {
             throw new Error('config object is not correct or missing');
         }
@@ -214,6 +220,7 @@ function XHRLoader(cfg) {
             xhr.onloadend = onloadend;
             xhr.onerror = onloadend;
             xhr.onprogress = progress;
+            xhr.onabort = onabort;
 
             // Adds the ability to delay single fragment loading time to control buffer.
             let now = new Date().getTime();

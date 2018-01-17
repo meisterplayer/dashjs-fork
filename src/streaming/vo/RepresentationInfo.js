@@ -28,20 +28,19 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-
 /**
- * Adobe Access DRM
- *
  * @class
- * @implements KeySystem
+ * @ignore
  */
-import FactoryMaker from '../../../core/FactoryMaker';
-
-//TODO implement
-function KeySystemAdobeAccess() {
-    let instance = {};
-    return instance;
+class RepresentationInfo {
+    constructor() {
+        this.id = null;
+        this.quality = null;
+        this.DVRWindow = null;
+        this.fragmentDuration = null;
+        this.mediaInfo = null;
+        this.MSETimeOffset = null;
+    }
 }
 
-KeySystemAdobeAccess.__dashjs_factory_name = 'KeySystemAdobeAccess';
-export default FactoryMaker.getSingletonFactory(KeySystemAdobeAccess);
+export default RepresentationInfo;

@@ -34,6 +34,8 @@ import TextSourceBuffer from './TextSourceBuffer';
 import TextTracks from './TextTracks';
 import VTTParser from '../utils/VTTParser';
 import TTMLParser from '../utils/TTMLParser';
+import EventBus from '../../core/EventBus';
+import Events from '../../core/events/Events';
 
 function TextController() {
 
@@ -41,8 +43,7 @@ function TextController() {
     let instance;
     let textSourceBuffer;
 
-    let allTracksAreDisabled,
-        errHandler,
+    let errHandler,
         dashManifestModel,
         manifestModel,
         mediaController,
@@ -50,18 +51,28 @@ function TextController() {
         streamController,
         textTracks,
         vttParser,
-        ttmlParser;
+        ttmlParser,
+        eventBus,
+        defaultLanguage,
+        lastEnabledIndex,
+        textDefaultEnabled, // this is used for default settings (each time a file is loaded, we check value of this settings )
+        allTracksAreDisabled; // this is used for one session (when a file has been loaded, we use this settings to enable/disable text)
 
     function setup() {
 
+        defaultLanguage = '';
+        lastEnabledIndex = -1;
+        textDefaultEnabled = true;
         textTracks = TextTracks(context).getInstance();
         vttParser = VTTParser(context).getInstance();
         ttmlParser = TTMLParser(context).getInstance();
         textSourceBuffer = TextSourceBuffer(context).getInstance();
+        eventBus = EventBus(context).getInstance();
 
         textTracks.initialize();
+        eventBus.on(Events.TEXT_TRACKS_QUEUE_INITIALIZED, onTextTracksAdded, instance);
 
-        reset();
+        resetInitialSettings();
     }
 
     function setConfig(config) {
@@ -122,55 +133,127 @@ function TextController() {
         textSourceBuffer.addEmbeddedTrack(mediaInfo);
     }
 
-    function setTextTrack() {
+    function setTextDefaultLanguage(lang) {
+        if (typeof lang !== 'string') {
+            return;
+        }
+
+        defaultLanguage = lang;
+    }
+
+    function getTextDefaultLanguage() {
+        return defaultLanguage;
+    }
+
+    function onTextTracksAdded(e) {
+        let tracks = e.tracks;
+        let index = e.index;
+        // find track corresponding to default subtitle and apply it
+        let defaultLanguageIndex = tracks.findIndex((item) => {
+            return (item.lang === defaultLanguage);
+        });
+
+        if (defaultLanguageIndex !== -1) {
+            this.setTextTrack(defaultLanguageIndex);
+            index = defaultLanguageIndex;
+        }
+
+        if (!textDefaultEnabled) {
+            // disable text at startup
+            this.setTextTrack(-1);
+        }
+
+        lastEnabledIndex = index;
+        eventBus.trigger(Events.TEXT_TRACKS_ADDED, {
+            enabled: !allTracksAreDisabled,
+            index: index,
+            tracks: tracks
+        });
+    }
+
+    function setTextDefaultEnabled(enable) {
+        if (typeof enable !== 'boolean') {
+            return;
+        }
+        textDefaultEnabled = enable;
+    }
+
+    function getTextDefaultEnabled() {
+        return textDefaultEnabled;
+    }
+
+    function enableText(enable) {
+        if (typeof enable !== 'boolean') {
+            return;
+        }
+        let isTextEnabled = (!allTracksAreDisabled);
+        if (isTextEnabled !== enable) {
+            // change track selection
+            if (enable) {
+                // apply last enabled tractk
+                this.setTextTrack(lastEnabledIndex);
+            }
+
+            if (!enable) {
+                // keep last index and disable text track
+                lastEnabledIndex = this.getCurrentTrackIdx();
+                this.setTextTrack(-1);
+            }
+        }
+    }
+
+    function isTextEnabled() {
+        return !allTracksAreDisabled;
+    }
+
+    function setTextTrack(idx) {
+        //For external time text file,  the only action needed to change a track is marking the track mode to showing.
+        // Fragmented text tracks need the additional step of calling TextController.setTextTrack();
 
         let config = textSourceBuffer.getConfig();
         let fragmentModel = config.fragmentModel;
-        let embeddedTracks = config.embeddedTracks;
-        let isFragmented = config.isFragmented;
         let fragmentedTracks = config.fragmentedTracks;
 
-        let tracks = videoModel.getTextTracks();
-        const ln = tracks.length;
-        let nrNonEmbeddedTracks = ln - embeddedTracks.length;
         let oldTrackIdx = textTracks.getCurrentTrackIdx();
+        if (oldTrackIdx !== idx) {
+            textTracks.setModeForTrackIdx(oldTrackIdx, Constants.TEXT_HIDDEN);
+            textTracks.setCurrentTrackIdx(idx);
+            textTracks.setModeForTrackIdx(idx, Constants.TEXT_SHOWING);
 
-        for (let i = 0; i < ln; i++) {
-            let track = tracks[i];
-            allTracksAreDisabled = track.mode !== Constants.TEXT_SHOWING;
-            if (track.mode === Constants.TEXT_SHOWING) {
-                if (oldTrackIdx !== i) { // do not reset track if already the current track.  This happens when all captions get turned off via UI and then turned on again and with videojs.
-                    textTracks.setCurrentTrackIdx(i);
-                    textTracks.addCaptions(i, 0, null); // Make sure that previously queued captions are added as cues
+            let currentTrackInfo = textTracks.getCurrentTrackInfo();
 
-                    // specific to fragmented text
-                    if (isFragmented && i < nrNonEmbeddedTracks) {
+            if (currentTrackInfo && currentTrackInfo.isFragmented && !currentTrackInfo.isEmbedded) {
+                for (let i = 0; i < fragmentedTracks.length; i++) {
+                    let mediaInfo = fragmentedTracks[i];
+                    if (currentTrackInfo.lang === mediaInfo.lang && currentTrackInfo.index === mediaInfo.index &&
+                        (currentTrackInfo.label ? currentTrackInfo.label === mediaInfo.id : true)) {
                         let currentFragTrack = mediaController.getCurrentTrackFor(Constants.FRAGMENTED_TEXT, streamController.getActiveStreamInfo());
-                        let newFragTrack = fragmentedTracks[i];
-                        if (newFragTrack !== currentFragTrack) {
+                        if (mediaInfo !== currentFragTrack) {
                             fragmentModel.abortRequests();
+                            fragmentModel.removeExecutedRequestsBeforeTime();
+                            textSourceBuffer.remove();
                             textTracks.deleteCuesFromTrackIdx(oldTrackIdx);
-                            mediaController.setTrack(newFragTrack);
+                            mediaController.setTrack(mediaInfo);
                             textSourceBuffer.setCurrentFragmentedTrackIdx(i);
                         }
                     }
                 }
-                break;
             }
         }
 
-        if (allTracksAreDisabled) {
-            textTracks.setCurrentTrackIdx(-1);
-        }
+        allTracksAreDisabled = idx === -1 ? true : false;
     }
 
     function getCurrentTrackIdx() {
-        let textTracks = textSourceBuffer.getConfig().textTracks;
         return textTracks.getCurrentTrackIdx();
     }
 
-    function reset() {
+    function resetInitialSettings() {
         allTracksAreDisabled = false;
+    }
+
+    function reset() {
+        resetInitialSettings();
         textSourceBuffer.resetEmbedded();
     }
 
@@ -179,6 +262,12 @@ function TextController() {
         getTextSourceBuffer: getTextSourceBuffer,
         getAllTracksAreDisabled: getAllTracksAreDisabled,
         addEmbeddedTrack: addEmbeddedTrack,
+        getTextDefaultLanguage: getTextDefaultLanguage,
+        setTextDefaultLanguage: setTextDefaultLanguage,
+        setTextDefaultEnabled: setTextDefaultEnabled,
+        getTextDefaultEnabled: getTextDefaultEnabled,
+        enableText: enableText,
+        isTextEnabled: isTextEnabled,
         setTextTrack: setTextTrack,
         getCurrentTrackIdx: getCurrentTrackIdx,
         reset: reset

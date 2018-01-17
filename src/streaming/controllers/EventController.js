@@ -28,7 +28,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import Constants from '../constants/Constants';
+
 import FactoryMaker from '../../core/FactoryMaker';
 import Debug from '../../core/Debug';
 import EventBus from '../../core/EventBus';
@@ -54,7 +54,11 @@ function EventController() {
         playbackController,
         isStarted;
 
-    function initialize() {
+    function setup() {
+        resetInitialSettings();
+    }
+
+    function resetInitialSettings() {
         isStarted = false;
         inlineEvents = {};
         inbandEvents = {};
@@ -70,7 +74,7 @@ function EventController() {
         }
     }
 
-    function clear() {
+    function stop() {
         if (eventInterval !== null && isStarted) {
             clearInterval(eventInterval);
             eventInterval = null;
@@ -154,14 +158,8 @@ function EventController() {
     }
 
     function refreshManifest() {
-        var manifest = manifestModel.getValue();
-        var url = manifest.url;
-
-        if (manifest.hasOwnProperty(Constants.LOCATION)) {
-            url = manifest.Location;
-        }
-        log('Refresh manifest @ ' + url);
-        manifestUpdater.getManifestLoader().load(url);
+        checkSetConfigCall();
+        manifestUpdater.refreshManifest();
     }
 
     function triggerEvents(events) {
@@ -211,22 +209,20 @@ function EventController() {
     }
 
     function reset() {
-        clear();
-        inlineEvents = null;
-        inbandEvents = null;
-        activeEvents = null;
-        playbackController = null;
+        stop();
+        resetInitialSettings();
     }
 
     instance = {
-        initialize: initialize,
         addInlineEvents: addInlineEvents,
         addInbandEvents: addInbandEvents,
-        clear: clear,
+        stop: stop,
         start: start,
         setConfig: setConfig,
         reset: reset
     };
+
+    setup();
 
     return instance;
 }

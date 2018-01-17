@@ -41,6 +41,7 @@ import SegmentValuesMap from './maps/SegmentValuesMap';
 
 function DashParser(config) {
 
+    config = config || {};
     const context = this.context;
     const log = Debug(context).getInstance().log;
     const errorHandler = config.errorHandler;
@@ -81,7 +82,15 @@ function DashParser(config) {
         }
     }
 
-    function parse(data, xlinkController) {
+    function getMatchers() {
+        return matchers;
+    }
+
+    function getIron() {
+        return objectIron;
+    }
+
+    function parse(data) {
         let manifest;
 
         checkConfig();
@@ -101,9 +110,6 @@ function DashParser(config) {
 
             const ironedTime = window.performance.now();
 
-            xlinkController.setMatchers(matchers);
-            xlinkController.setIron(objectIron);
-
             log('Parsing complete: ( xml2json: ' + (jsonTime - startTime).toPrecision(3) + 'ms, objectiron: ' + (ironedTime - jsonTime).toPrecision(3) + 'ms, total: ' + ((ironedTime - startTime) / 1000).toPrecision(3) + 's)');
         } catch (err) {
             errorHandler.manifestError('parsing the manifest failed', 'parse', data, err);
@@ -114,7 +120,9 @@ function DashParser(config) {
     }
 
     instance = {
-        parse: parse
+        parse: parse,
+        getMatchers: getMatchers,
+        getIron: getIron
     };
 
     setup();

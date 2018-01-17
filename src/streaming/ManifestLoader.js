@@ -47,6 +47,7 @@ const MANIFEST_LOADER_MESSAGE_PARSING_FAILURE = 'parsing failed';
 
 function ManifestLoader(config) {
 
+    config = config || {};
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
     const urlUtils = URLUtils(context).getInstance();
@@ -152,7 +153,11 @@ function ManifestLoader(config) {
                     return;
                 }
 
-                const manifest = parser.parse(data, xlinkController);
+                // init xlinkcontroller with matchers and iron object from created parser
+                xlinkController.setMatchers(parser.getMatchers());
+                xlinkController.setIron(parser.getIron());
+
+                const manifest = parser.parse(data);
 
                 if (manifest) {
                     manifest.url = actualUrl || url;

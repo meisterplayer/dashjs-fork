@@ -35,7 +35,7 @@ import {replaceTokenForTemplate, getIndexBasedSegment, decideSegmentListRangeFor
 
 function TemplateSegmentsGetter(config, isDynamic) {
 
-    let timelineConverter = config.timelineConverter;
+    const timelineConverter = config.timelineConverter;
 
     let instance;
 
@@ -45,7 +45,7 @@ function TemplateSegmentsGetter(config, isDynamic) {
         const duration = representation.segmentDuration;
         const availabilityWindow = representation.segmentAvailabilityRange;
 
-        let segments = [];
+        const segments = [];
         let url = null;
         let seg = null;
 

@@ -40,6 +40,7 @@ import DashHandler from '../dash/DashHandler';
 
 function StreamProcessor(config) {
 
+    config = config || {};
     let context = this.context;
 
     let indexHandler;
@@ -73,10 +74,12 @@ function StreamProcessor(config) {
         spExternalControllers;
 
     function setup() {
-        liveEdgeFinder = LiveEdgeFinder(context).create({
-            timelineConverter: timelineConverter,
-            streamProcessor: instance
-        });
+        if (playbackController && playbackController.getIsDynamic()) {
+            liveEdgeFinder = LiveEdgeFinder(context).create({
+                timelineConverter: timelineConverter,
+                streamProcessor: instance
+            });
+        }
         resetInitialSettings();
     }
 
@@ -93,8 +96,8 @@ function StreamProcessor(config) {
         });
 
         // initialize controllers
-        indexHandler.initialize(this);
-        abrController.registerStreamType(type, this);
+        indexHandler.initialize(instance);
+        abrController.registerStreamType(type, instance);
 
         fragmentModel = stream.getFragmentController().getModel(type);
         fragmentModel.setStreamProcessor(instance);
@@ -110,11 +113,10 @@ function StreamProcessor(config) {
             mediaPlayerModel: mediaPlayerModel,
             abrController: abrController,
             playbackController: playbackController,
-            mediaController: mediaController,
             streamController: streamController,
             textController: textController,
             sourceBufferController: sourceBufferController,
-            streamProcessor: this
+            streamProcessor: instance
         });
 
         representationController = RepresentationController(context).create();
@@ -128,7 +130,7 @@ function StreamProcessor(config) {
             manifestModel: manifestModel,
             playbackController: playbackController,
             timelineConverter: timelineConverter,
-            streamProcessor: this
+            streamProcessor: instance
         });
         bufferController.initialize(mediaSource);
         scheduleController.initialize();
@@ -145,6 +147,10 @@ function StreamProcessor(config) {
         if (index !== -1) {
             spExternalControllers.splice(index, 1);
         }
+    }
+
+    function getExternalControllers() {
+        return spExternalControllers;
     }
 
     function unregisterAllExternalController() {
@@ -176,6 +182,9 @@ function StreamProcessor(config) {
             representationController = null;
         }
 
+        if (abrController) {
+            abrController.unRegisterStreamType(type);
+        }
         spExternalControllers.forEach(function (controller) {
             controller.reset();
         });
@@ -183,7 +192,10 @@ function StreamProcessor(config) {
         resetInitialSettings();
         type = null;
         stream = null;
-        liveEdgeFinder.reset();
+        if (liveEdgeFinder) {
+            liveEdgeFinder.reset();
+            liveEdgeFinder = null;
+        }
     }
 
     function isUpdating() {
@@ -362,6 +374,7 @@ function StreamProcessor(config) {
         setBuffer: setBuffer,
         registerExternalController: registerExternalController,
         unregisterExternalController: unregisterExternalController,
+        getExternalControllers: getExternalControllers,
         unregisterAllExternalController: unregisterAllExternalController,
         reset: reset
     };

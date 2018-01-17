@@ -28,19 +28,17 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-/**
- * @class
- * @ignore
- */
-class TrackInfo {
-    constructor() {
-        this.id = null;
-        this.quality = null;
-        this.DVRWindow = null;
-        this.fragmentDuration = null;
-        this.mediaInfo = null;
-        this.MSETimeOffset = null;
-    }
+
+import FactoryMaker from '../../src/core/FactoryMaker';
+
+// Shove both of these into the global scope
+var context = (typeof window !== 'undefined' && window) || global;
+
+var dashjs = context.dashjs;
+if (!dashjs) {
+    dashjs = context.dashjs = {};
 }
 
-export default TrackInfo;
+dashjs.FactoryMaker = FactoryMaker;
+
+export default dashjs;
