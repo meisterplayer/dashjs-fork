@@ -32,12 +32,14 @@
 import { MediaPlayer } from './index_mediaplayerOnly';
 
 import MetricsReporting from './src/streaming/metrics/MetricsReporting';
-import Protection from './src/streaming/protection/Protection';
+// import Protection from './src/streaming/protection/Protection';
 import MediaPlayerFactory from './src/streaming/MediaPlayerFactory';
+import MssHandler from './src/mss/MssHandler';
 
-dashjs.Protection = Protection;
+// dashjs.Protection = Protection;
 dashjs.MetricsReporting = MetricsReporting;
 dashjs.MediaPlayerFactory = MediaPlayerFactory;
+dashjs.MssHandler = MssHandler;
 
 export default dashjs;
-export { MediaPlayer, Protection, MetricsReporting, MediaPlayerFactory};
+export { MediaPlayer, MetricsReporting, MediaPlayerFactory, MssHandler };
