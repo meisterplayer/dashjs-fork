@@ -150,6 +150,9 @@ function TimelineConverter() {
         const now = calcPresentationTimeFromWallTime(new Date(), voPeriod);
         const periodEnd = voPeriod.start + voPeriod.duration;
         range.start = Math.max((now - voPeriod.mpd.timeShiftBufferDepth), voPeriod.start);
+        if (voRepresentation.availableSegmentsStartTime) {
+            range.start = Math.max(voRepresentation.availableSegmentsStartTime, range.start);
+        }
 
         const endOffset = voRepresentation.availabilityTimeOffset !== undefined &&
             voRepresentation.availabilityTimeOffset < d ? d - voRepresentation.availabilityTimeOffset : d;

@@ -413,6 +413,12 @@ function DashManifestModel(config) {
         return !s.hasOwnProperty('r') || s.r >= 0;
     }
 
+    function availableSegmentsStartTime(segmentInfo) {
+        let timescale = segmentInfo.hasOwnProperty('timescale') ? segmentInfo.timescale : 1;
+        let s = segmentInfo.SegmentTimeline.S_asArray[0];
+        return s.hasOwnProperty('t') ? (s.t / timescale) : 0;
+    }
+
     function getUseCalculatedLiveEdgeTimeForAdaptation(voAdaptation) {
         let realRepresentation = getRealAdaptationFor(voAdaptation).Representation_asArray[0];
         let segmentInfo;
@@ -489,6 +495,7 @@ function DashManifestModel(config) {
                     if (segmentInfo.hasOwnProperty(DashConstants.SEGMENT_TIMELINE)) {
                         voRepresentation.segmentInfoType = DashConstants.SEGMENT_TIMELINE;
                         voRepresentation.useCalculatedLiveEdgeTime = isLastRepeatAttributeValid(segmentInfo.SegmentTimeline);
+                        voRepresentation.availableSegmentsStartTime = availableSegmentsStartTime(segmentInfo);
                     } else {
                         voRepresentation.segmentInfoType = DashConstants.SEGMENT_LIST;
                         voRepresentation.useCalculatedLiveEdgeTime = true;
@@ -499,6 +506,7 @@ function DashManifestModel(config) {
                     if (segmentInfo.hasOwnProperty(DashConstants.SEGMENT_TIMELINE)) {
                         voRepresentation.segmentInfoType = DashConstants.SEGMENT_TIMELINE;
                         voRepresentation.useCalculatedLiveEdgeTime = isLastRepeatAttributeValid(segmentInfo.SegmentTimeline);
+                        voRepresentation.availableSegmentsStartTime = availableSegmentsStartTime(segmentInfo);
                     } else {
                         voRepresentation.segmentInfoType = DashConstants.SEGMENT_TEMPLATE;
                     }
